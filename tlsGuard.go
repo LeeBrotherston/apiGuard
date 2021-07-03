@@ -60,11 +60,10 @@ var globalConfig userConfig
 
 func main() {
 	// Check commandline config options
-
+	var fpJSON = flag.String("fingerprint", "./tlsproxy.json", "the fingerprint file")
 	var listenAddress = flag.String("listen", "127.0.0.1:8080", "address for proxy to listen to")
 	var config = flag.String("config", "./config.json", "location of config file")
-	var interfaceName = flag.String("interface", "", "Specify the interface")
-	var sniff = flag.Bool("sniff", false, "Set true to use sniffing mode (default proxy)")
+	//var interfaceName = flag.String("interface", "", "Specify the interface")
 	flag.Parse()
 
 	// Open JSON file tlsproxy.json

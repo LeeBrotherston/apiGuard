@@ -25,15 +25,9 @@ func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
 	// Need to de-loop this
 	for len(destination) == 0 {
 		// Grab some data in the buffer
-		reqLen, err := conn.Read(buf)
+		_, err := conn.Read(buf)
 
-		if err != nil {
-			// Most likely an EOF because something disconnected.
-			fmt.Println("Error reading a socket: ", err.Error())
-			// There has been an error, let's kill this
-			conn.Close()
-			return
-		}
+		check(err)
 
 		if buf[0] == 22 && buf[5] == 1 && buf[1] == 3 && buf[9] == 3 {
 			log.Printf("About to call tlsFingerprint")
