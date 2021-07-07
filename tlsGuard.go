@@ -26,19 +26,19 @@ import (
 	"os"
 
     _ "github.com/joho/godotenv/autoload"  // Nice autoload for godotenv so we can use a .env file or real environment variables
-	"github.com/LeeBrotherston/dactyloscopy"  // Super cool package by someguy(tm) for TLS Fingerprinting
+	"github.com/LeeBrotherston/dactyloscopy"  // Super cool package by someguy(tm) for TLS Fingerprinting ;)
 )
 
 // Global blocklist map (temp)
 var blocklist = map[string]bool{}
 
 func main() {
-	// Check commandline options
-	var fpJSON = os.Getenv("TLSGUARD_FPFILE")
-	var listenAddress = os.Getenv("TLSGUARD_LISTEN")
+	// Check environment variables (or .env file)
+	fpJSON := os.Getenv("TLSGUARD_FPFILE")
+	listenAddress := os.Getenv("TLSGUARD_LISTEN")
 
 	// Open JSON file tlsproxy.json
-	file, err := ioutil.ReadFile(*fpJSON)
+	file, err := ioutil.ReadFile(fpJSON)
 	if err != nil {
 		log.Printf("Problem: File error opening fingerprint file: %v\n", err)
 		log.Printf("You may wish to try: cat fingerprints.json | jq -scM '' > tlsProxy.json to update\n")
@@ -61,7 +61,7 @@ func main() {
 	log.Printf("Loaded %v fingerprints\n", len(jsontype))
 
 	// Setup Listener
-	listener, err := net.Listen("tcp", *listenAddress)
+	listener, err := net.Listen("tcp", listenAddress)
     check(err)
 
 	// Loop to handle new connections
