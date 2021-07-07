@@ -20,12 +20,12 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 
+    _ "github.com/joho/godotenv/autoload"  // Nice autoload for godotenv so we can use a .env file or real environment variables
 	"github.com/LeeBrotherston/dactyloscopy"  // Super cool package by someguy(tm) for TLS Fingerprinting
 )
 
@@ -34,9 +34,8 @@ var blocklist = map[string]bool{}
 
 func main() {
 	// Check commandline options
-	var fpJSON = flag.String("fingerprint", "./tlsproxy.json", "the fingerprint file")
-	var listenAddress = flag.String("listen", "127.0.0.1:8080", "address for proxy to listen to")
-	flag.Parse()
+	var fpJSON = os.Getenv("TLSGUARD_FPFILE")
+	var listenAddress = os.Getenv("TLSGUARD_LISTEN")
 
 	// Open JSON file tlsproxy.json
 	file, err := ioutil.ReadFile(*fpJSON)

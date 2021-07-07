@@ -36,45 +36,40 @@ func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
 	var chLen uint16
 
 	log.Printf("Starting forward function")
-	// Loop until the destination is determined, then connect to it
-	// XXX does not account for getting stuck in a shitty loop pre-connect
-	// Need to de-loop this
-	for len(destination) == 0 {
-		// Grab some data in the buffer
-		_, err := conn.Read(buf)
 
-		check(err)
+	// Grab some data in the buffer
+	_, err := conn.Read(buf)
+	check(err)
 
-		if buf[0] == 22 && buf[5] == 1 && buf[1] == 3 && buf[9] == 3 {
-			log.Printf("About to call tlsFingerprint")
-			fingerprintOutput, _, _ := dactyloscopy.TLSFingerprint(buf, fingerprintDBNew)
-			log.Printf("Fingerptintoutoutoutout: %v", fingerprintOutput)
-			destination = fingerprintOutput.Destination
+	if buf[0] == 22 && buf[5] == 1 && buf[1] == 3 && buf[9] == 3 {
+		log.Printf("About to call tlsFingerprint")
+		fingerprintOutput, _, _ := dactyloscopy.TLSFingerprint(buf, fingerprintDBNew)
+		log.Printf("Fingerptintoutoutoutout: %v", fingerprintOutput)
+		destination = fingerprintOutput.Destination
 
-			chLen = uint16(buf[3])<<8 + uint16(buf[4])
-			// Check if the host is in the blocklist or not...
-			//t := time.Now()
-			hostname := string(strings.SplitN(string(destination), ":", 2)[0])
-			_, ok := blocklist[hostname]
-			if ok == true {
-				log.Printf("%v is on the blocklist!  DROPPING!\n", hostname)
-				//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"block\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
-				// Just unceremoniously drop the connection, because lol.
-				conn.Close()
-			} else {
-				// Not on the blocklist - woo!
-				// XXX DO THIS!
-				log.Printf("%v is *not* on the blocklist.  Permitting\n", hostname)
-				//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"permit\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
-			}
-
+		chLen = uint16(buf[3])<<8 + uint16(buf[4])
+		// Check if the host is in the blocklist or not...
+		//t := time.Now()
+		hostname := string(strings.SplitN(string(destination), ":", 2)[0])
+		_, ok := blocklist[hostname]
+		if ok == true {
+			log.Printf("%v is on the blocklist!  DROPPING!\n", hostname)
+			//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"block\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
+			// Just unceremoniously drop the connection, because lol.
+			conn.Close()
 		} else {
-			defer conn.Close()
-			//log.Printf("%s Disconnected\n", conn.RemoteAddr())
-			return
+			// Not on the blocklist - woo!
+			// XXX DO THIS!
+			log.Printf("%v is *not* on the blocklist.  Permitting\n", hostname)
+			//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"permit\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
 		}
-		log.Printf("Say what? %v - %v", destination, proxyDest)
+
+	} else {
+	    // This doesn't look like TLS.... DROP IT ON THE FLOOR!
+		conn.Close()
+		return
 	}
+	log.Printf("Say what? %v - %v", destination, proxyDest)
 
 	log.Printf("Time to connect?")
 	// OK Destination is determined, let's do some connecting!
@@ -87,8 +82,8 @@ func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
 		return
 	}
 
-	// Actually route some packets (ok proxy them), yo!
-	// ... and transmit the buffer that we already processed (or a reconstructed one)
+	// Actually route some packets (ok forward them), yo!
+	// ... and transmit the buffer that we already processed
 	client.Write(buf[0 : chLen+5])
 
 	// Default buffer is 32K...  This lets us play with different sizes
