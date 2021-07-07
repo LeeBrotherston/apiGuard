@@ -19,7 +19,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 package main
 
 import (
-	"os"
 	"time"
 )
 
@@ -37,15 +36,4 @@ type Event struct {
 	//	TLSVersion  uint16    `json:"tls_version"`  // Part of the fingerprint, doesn't need to be stored here
 	SNI string `json:"server_name"`
 	//Fingerprint `json:"fingerprint,omitempty"`
-}
-
-type userConfig struct {
-	MinTLS    string   `json:"min_TLS_ver"`
-	Timeout   int64    `json:"timeout"`
-	AppLog    string   `json:"appLog"`
-	apFile    *os.File // Accompanying file descriptor
-	NewFPFile string   `json:"new_fingerprint_file"`
-	fpFile    *os.File // Accompanying file descriptor
-	EventLog  string   `json:"eventLog"`
-	eventFile *os.File // Accompanying file descriptor
 }
