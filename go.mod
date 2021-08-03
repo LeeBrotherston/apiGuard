@@ -3,7 +3,6 @@ module tlsGuard
 go 1.16
 
 require (
-	github.com/LeeBrotherston/dactyloscopy v0.0.0-20210707025623-02df07a2f238
+	github.com/LeeBrotherston/dactyloscopy v0.0.0-20210712004441-95e22a08e5a5
 	github.com/joho/godotenv v1.3.0
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 )

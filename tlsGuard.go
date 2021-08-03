@@ -25,17 +25,19 @@ import (
 	"net"
 	"os"
 
-    _ "github.com/joho/godotenv/autoload"  // Nice autoload for godotenv so we can use a .env file or real environment variables
-	"github.com/LeeBrotherston/dactyloscopy"  // Super cool package by someguy(tm) for TLS Fingerprinting ;)
+	"github.com/LeeBrotherston/dactyloscopy" // Super cool package by someguy(tm) for TLS Fingerprinting ;)
+	_ "github.com/joho/godotenv/autoload"    // Nice autoload for godotenv so we can use a .env file or real environment variables
 )
 
 // Global blocklist map (temp)
 var blocklist = map[string]bool{}
+var fingerprintDBNew = make(map[uint64]string)
 
 func main() {
 	// Check environment variables (or .env file)
 	fpJSON := os.Getenv("TLSGUARD_FPFILE")
 	listenAddress := os.Getenv("TLSGUARD_LISTEN")
+	destination := os.Getenv("TLSGUARD_DEST")
 
 	// Open JSON file tlsproxy.json
 	file, err := ioutil.ReadFile(fpJSON)
@@ -48,11 +50,10 @@ func main() {
 	// Parse that JSON file
 	var jsontype []dactyloscopy.FingerprintFile
 	err = json.Unmarshal(file, &jsontype)
-    check(err)
-
+	check(err)
 
 	// Create the bare fingerprintDB map structure
-	fingerprintDBNew := make(map[uint64]string)
+	//fingerprintDBNew := make(map[uint64]string)
 
 	// populate the fingerprintDB map
 	for k := range jsontype {
@@ -62,14 +63,14 @@ func main() {
 
 	// Setup Listener
 	listener, err := net.Listen("tcp", listenAddress)
-    check(err)
+	check(err)
 
 	// Loop to handle new connections
 	for {
 		log.Printf("Listener for loooooooop")
 		conn, err := listener.Accept()
-        check(err)
-		go forward(conn, fingerprintDBNew)
+		check(err)
+		go forward(conn, destination, fingerprintDBNew)
 	}
 
 }

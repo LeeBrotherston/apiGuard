@@ -29,10 +29,8 @@ import (
 )
 
 // forward handles an individual connection
-func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
+func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]string) {
 	buf := make([]byte, 1024)
-	proxyDest := ""
-	var destination []byte
 	var chLen uint16
 
 	log.Printf("Starting forward function")
@@ -45,7 +43,6 @@ func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
 		log.Printf("About to call tlsFingerprint")
 		fingerprintOutput, _, _ := dactyloscopy.TLSFingerprint(buf, fingerprintDBNew)
 		log.Printf("Fingerptintoutoutoutout: %v", fingerprintOutput)
-		destination = fingerprintOutput.Destination
 
 		chLen = uint16(buf[3])<<8 + uint16(buf[4])
 		// Check if the host is in the blocklist or not...
@@ -65,20 +62,20 @@ func forward(conn net.Conn, fingerprintDBNew map[uint64]string) {
 		}
 
 	} else {
-	    // This doesn't look like TLS.... DROP IT ON THE FLOOR!
+		// This doesn't look like TLS.... DROP IT ON THE FLOOR!
 		conn.Close()
 		return
 	}
-	log.Printf("Say what? %v - %v", destination, proxyDest)
+	log.Printf("Say what? %v - %v", destination, destination)
 
 	log.Printf("Time to connect?")
 	// OK Destination is determined, let's do some connecting!
-	client, err := net.DialTimeout("tcp", proxyDest, time.Duration(connectTimeout))
+	client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
 
 	if err != nil {
 		// Could not connect, burn it all down!!!
 		defer conn.Close()
-		log.Printf("Dial to '%v' failed: %v", proxyDest, err)
+		log.Printf("Dial to '%v' failed: %v", destination, err)
 		return
 	}
 
