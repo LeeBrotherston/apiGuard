@@ -23,7 +23,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
 
 	dactyloscopy "github.com/LeeBrotherston/dactyloscopy"
 )
@@ -70,7 +69,8 @@ func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]stri
 
 	log.Printf("Time to connect?")
 	// OK Destination is determined, let's do some connecting!
-	client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
+	//client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
+	client, err := net.Dial("tcp", destination)
 
 	if err != nil {
 		// Could not connect, burn it all down!!!

@@ -19,4 +19,4 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 package main
 
 const minTLSPacketSize = 1500 // This number needs updating to our real minimum.
-const connectTimeout = 30 // Amount of time before a connection to the backend times out
+const connectTimeout = 30000  // Amount of time before a connection to the backend times out
