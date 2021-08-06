@@ -29,8 +29,6 @@ import (
 	_ "github.com/joho/godotenv/autoload"    // Nice autoload for godotenv so we can use a .env file or real environment variables
 )
 
-// Global blocklist map (temp)
-var blocklist = map[string]bool{}
 var fingerprintDBNew = make(map[uint64]string)
 
 func main() {

@@ -22,15 +22,38 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
+	"sync"
 
 	dactyloscopy "github.com/LeeBrotherston/dactyloscopy"
 )
 
 // forward handles an individual connection
 func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]string) {
-	buf := make([]byte, 1024)
+	var wg sync.WaitGroup
 	var chLen uint16
+
+	// The connection to the destination can take a few moments due to networks, slow hosts,
+	// etc, etc.... Thus we perform the connection concurrently with reading buffers and
+	// fingerprinting, in the hope that the negotiation is complete by the time we need it.
+	c1 := make(chan net.Conn)
+	wg.Add(1)
+	go func(string) {
+		// Mark the function as done via the wait group once completed...
+		defer wg.Done()
+
+		log.Printf("Debug: connecting")
+		// OK Destination is determined, let's do some connecting!
+		//client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
+		client, err := net.Dial("tcp", destination)
+
+		if err != nil {
+			log.Printf("Debug: Something went bad with the net.Dial")
+			c1 <- nil
+		}
+		c1 <- client
+	}(destination)
+
+	buf := make([]byte, 1024)
 
 	log.Printf("Starting forward function")
 
@@ -44,21 +67,6 @@ func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]stri
 		log.Printf("Fingerptintoutoutoutout: %v", fingerprintOutput)
 
 		chLen = uint16(buf[3])<<8 + uint16(buf[4])
-		// Check if the host is in the blocklist or not...
-		//t := time.Now()
-		hostname := string(strings.SplitN(string(destination), ":", 2)[0])
-		_, ok := blocklist[hostname]
-		if ok == true {
-			log.Printf("%v is on the blocklist!  DROPPING!\n", hostname)
-			//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"block\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
-			// Just unceremoniously drop the connection, because lol.
-			conn.Close()
-		} else {
-			// Not on the blocklist - woo!
-			// XXX DO THIS!
-			log.Printf("%v is *not* on the blocklist.  Permitting\n", hostname)
-			//fmt.Fprintf(globalConfig.eventFile, "{ \"timestamp\": \"%v\", \"event\": \"permit\", \"fingerprint_desc\": \"%v\", \"server_name\": \"%v\" }\n", t.Format(time.RFC3339), fingerprintOutput.FingerprintName, hostname)
-		}
 
 	} else {
 		// This doesn't look like TLS.... DROP IT ON THE FLOOR!
@@ -67,10 +75,11 @@ func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]stri
 	}
 	log.Printf("Say what? %v - %v", destination, destination)
 
-	log.Printf("Time to connect?")
+	//log.Printf("Time to connect?")
 	// OK Destination is determined, let's do some connecting!
 	//client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
-	client, err := net.Dial("tcp", destination)
+	//client, err := net.Dial("tcp", destination)
+	client := <-c1
 
 	if err != nil {
 		// Could not connect, burn it all down!!!
@@ -81,6 +90,7 @@ func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]stri
 
 	// Actually route some packets (ok forward them), yo!
 	// ... and transmit the buffer that we already processed
+	wg.Wait()
 	client.Write(buf[0 : chLen+5])
 
 	// Default buffer is 32K...  This lets us play with different sizes
@@ -99,4 +109,20 @@ func forward(conn net.Conn, destination string, fingerprintDBNew map[uint64]stri
 
 	}()
 
+}
+
+func connectDest(destination string, wg *sync.WaitGroup) net.Conn {
+	// Mark the function as done via the wait group once completed...
+	defer wg.Done()
+
+	log.Printf("Debug: connecting")
+	// OK Destination is determined, let's do some connecting!
+	//client, err := net.DialTimeout("tcp", destination, time.Duration(connectTimeout))
+	client, err := net.Dial("tcp", destination)
+
+	if err != nil {
+		log.Printf("Debug: Something went bad with the net.Dial")
+		return nil
+	}
+	return client
 }
